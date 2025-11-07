@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIgAAAA7CAYAAACg5MKJAAAACXBIWXMAAC4jAAAuIwF4pT92AAAGB0lEQVR4nO1d/3HaPhRXuf7LNRsUTdBkgsAESScgTOBkgpAJgicImaB0giYTlE4A3YCeF/ieuI9z4n2Fec+WZAP63PUacsZ5kj96vyV/UgkniyLTl0qpC6XUpp+vlnXGmQhyYigybQjxrJS6BTlKbJRSeT9fTSUjTgQ5IUBj/CLEoDCaZNTPVxvOyHvnPqmnAmiOQ+QwMC">
+<title>K-APEX Drayage Rate Tool</title>
+<style>
+  :root{--bg:#f4f4f4;--card:#ffffff;--text:#1f2937;--muted:#6b7280;--gray:#575757;--orange:#f36f21;--ok:#10b981;--err:#ef4444}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  .wrap{max-width:980px;margin:32px auto;padding:0 16px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .title{font-size:clamp(20px,3vw,28px);font-weight:800;color:var(--gray)}
+  .badge{padding:4px 10px;border-radius:999px;background:#fff7ed;color:var(--orange);border:1px solid #fed7aa;font-weight:700;font-size:12px}
+  .card{background:var(--card);border:1px solid #e5e7eb;border-radius:14px;padding:18px;box-shadow:0 10px 20px rgba(0,0,0,.04)}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(12,1fr)}
+  .col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-5{grid-column:span 5}.col-6{grid-column:span 6}.col-12{grid-column:span 12}
+  @media(max-width:780px){.col-3,.col-4,.col-5,.col-6{grid-column:span 12}}
+  label{font-weight:600;color:var(--gray)}
+  input,select{width:100%;border:1px solid #d1d5db;border-radius:10px;padding:12px;font-size:15px;background:#fff}
+  input:focus,select:focus{border-color:var(--orange);outline:none}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{background:var(--orange);color:#fff;border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer}
+  .btn.secondary{background:#fff;color:var(--orange);border:1px solid var(--orange)}
+  .mini{font-size:12px;color:var(--muted)}
+  .result{border-top:1px dashed #e5e7eb;margin-top:18px;padding-top:18px}
+  .stat{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9}
+  .stat:last-child{border-bottom:none}
+  .log{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;background:#0b1020;color:#cbd5e1;padding:12px;border-radius:10px;max-height:260px;overflow:auto}
+  .access{margin-top:14px;border:1px solid #eceff3;border-radius:12px;padding:12px;background:#fafafa}
+  .access h3{margin:0 0 8px 0;color:var(--gray);font-size:16px}
+  .access ul{margin:0 0 8px 16px;padding:0}
+  .access li{margin:6px 0}
+  .disclaimer{font-size:12px;color:var(--muted);margin-top:6px}
+
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand img{height:44px;max-width:220px;object-fit:contain}
+  @media(max-width:780px){.brand img{height:36px}}
+
+
+/* Fix input field overlap in grid */
+*, *::before, *::after { box-sizing: border-box; }
+.grid > * { min-width: 0; } /* allow columns to shrink without overflow */
+.col-5, .col-4, .col-3 { min-width: 0; } /* explicit for safety */
+input, select { width: 100%; max-width: 100%; } /* prevent overflow */
+</style>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body>
+<div class="wrap">
+<header><div class="brand"><img alt="K-APEX . A member of KLN" src="data:image/png;base64,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"/><div class="title">Drayage Rate Tool</div></div><span class="badge" id="statusBadge">Idle</span></header>
+<div class="card">
+<div class="grid">
+<div class="col-12 mini">Use ZIP or City + State   ZIP+4 is OK   You only need to use the first 5 digits</div>
+<div class="col-5">
+<label for="zip">Zip Code</label>
+<input id="zip" placeholder="e.g., 94010 or 94010-1234"/>
+<div class="mini">Leave blank if using city and state</div>
+</div>
+<div class="col-4">
+<label for="city">City</label>
+<input id="city" placeholder="e.g., Burlingame"/>
+</div>
+<div class="col-3">
+<label for="state">State</label>
+<input id="state" maxlength="2" placeholder="e.g., CA"/>
+</div>
+<div class="col-12">
+<label for="overrideSelect">Destination override (optional)</label>
+<select id="overrideSelect"></select>
+<div class="mini">Default is Auto . nearest by driving distance</div>
+</div>
+<div class="col-12 row">
+<button class="btn" id="calcBtn">Calculate Rate</button>
+<button class="btn secondary" id="resetBtn">Reset</button>
+<button class="btn secondary" id="copyBtn">Copy Summary</button>
+</div>
+<div class="col-12">
+<div class="result" hidden="" id="result">
+<div class="stat"><span class="mini">Selected Facility</span><span id="rName">—</span></div>
+<div class="stat"><span class="mini">Type</span><span id="rType">—</span></div>
+<div class="stat"><span class="mini">One-way Distance . mi</span><span id="rMilesOne">—</span></div>
+<div class="stat"><span class="mini">Round-trip Distance . mi</span><span id="rMilesRound">—</span></div>
+<div class="stat"><span class="mini">Calculated Cost . USD</span><span id="rCost">—</span></div>
+<div id="routeMap" style="height:320px;border:1px solid #e5e7eb;border-radius:12px;margin:12px 0;display:none"></div>
+
+<!-- Accessorial charges -->
+<div class="access" id="accessorials">
+<h3>Accessorial charges if applicable</h3>
+<ul>
+<li>Prepull - $150</li>
+<li>Yard Storage - $50/day</li>
+<li>Chassis Rental - $50/day</li>
+<li>Chassis Split - $150</li>
+<li>2 Hours free at the Ramp then $80/Hr after</li>
+<li>1 Hour free at warehouse then $100/Hr after</li>
+<li>Overweight fee - $250</li>
+<li>Tri Axle - $150/day</li>
+<li>Reefer Fee - $200</li>
+</ul>
+<div class="disclaimer">Legal weight , non-hazardous , live unload drayage. Other additional charges may apply for other requested services</div>
+</div>
+</div>
+</div>
+<div class="col-12">
+<details>
+<summary><strong>Diagnostics . click to expand</strong></summary>
+<div class="log" id="log"></div>
+<div class="mini">Routing . OSRM public demo server . Geocoding . Nominatim</div>
+<div class="mini">Prefilter . top 12 by air distance . then route each to pick true nearest by road</div>
+<div class="mini">Cost formula . <code>250 + RPM(location) × roundTripMiles . min $350 . no quote if roundTrip > 800 mi</code></div>
+</details>
+</div>
+</div>
+</div>
+</div>
+<script>
+// Utilities
+const $ = (id)=>document.getElementById(id);
+const logEl = $("log");
+const badge = $("statusBadge");
+const setBadge = (txt, cls)=>{ badge.textContent = txt; badge.style.color = cls || "var(--orange)"; };
+const log = (msg)=>{ logEl.textContent += msg + "\\n"; logEl.scrollTop = logEl.scrollHeight; };
+const round = (n,p=2)=>Number.parseFloat(n).toFixed(p);
+function assert(cond,msg){ if(!cond) throw new Error(msg); }
+function haversineMiles(a,b){
+  const R=3958.7613, toRad = d=>d*Math.PI/180;
+  const dLat=toRad(b.lat-a.lat), dLon=toRad(b.lon-a.lon);
+  const lat1=toRad(a.lat), lat2=toRad(b.lat);
+  const h=Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+
+// Data . Full Ports and IPI . with specified removals applied
+const DESTINATIONS = [
+  {name:"ATLANTA, GA - CSX & BNSF", type:"IPI", lat:33.545109, lon:-84.609939},
+  {name:"CHICAGO, IL - CN RAIL - CHICAGO - HARVEY (I092)", type:"IPI", lat:41.582582, lon:-87.646201},
+  {name:"MEMPHIS, TN - CN - INTERMODAL GATEWAY MEMPHIS", type:"IPI", lat:35.031884, lon:-90.151894},
+  {name:"MEMPHIS, TN - CSX - MEMPHIS", type:"IPI", lat:35.031884, lon:-90.151894},
+  {name:"CHICAGO, IL - CP RAIL - CHICAGO, BENSENVILLE (J830)", type:"IPI", lat:41.941386, lon:-87.894674},
+  {name:"CHICAGO, IL - BNSF - CHICAGO - LPC (H572)", type:"IPI", lat:41.393772, lon:-88.152065},
+  {name:"CHICAGO, IL  - UP JOLIET INTERMODAL TERMINAL GLOBAL 4 (I206)", type:"IPI", lat:41.458470, lon:-88.118630},
+  {name:"ATLANTA, GA - NS AUSTELL", type:"IPI", lat:33.822647, lon:-84.651274},
+  {name:"CHICAGO, IL -  NORFOLK SOUTHERN - LANDERS (I104)", type:"IPI", lat:41.756107, lon:-87.683117},
+  {name:"CHICAGO, IL - CSX (J470)", type:"IPI", lat:41.762825, lon:-87.799362},
+  {name:"MEMPHIS, TN - UP - MARION, AR", type:"IPI", lat:35.191874, lon:-90.257432},
+  {name:"HOUSTON, TX - HOUSTON PORT", type:"PORT", lat:29.673630, lon:-95.006670},
+  {name:"DETROIT, MI", type:"IPI", lat:42.316722, lon:-83.133398},
+  {name:"CINCINNATI, OH", type:"IPI", lat:39.121175, lon:-84.537791},
+  {name:"KANSAS CITY, KS - CPKC - KANSAS CITY / CSX KANSAS CITY", type:"IPI", lat:38.859078, lon:-94.559678},
+  {name:"MEMPHIS, TN - BNSF - MEMPHIS (SHELBY)", type:"IPI", lat:35.023622, lon:-89.900600},
+  {name:"NEW YORK, NY", type:"PORT", lat:40.668837, lon:-74.156747},
+  {name:"LA/LB, CA PORTS", type:"PORT", lat:33.782664, lon:-118.217784},
+  {name:"KANSAS CITY, KS - NS VOLTZ / UP NEFF", type:"IPI", lat:39.181953, lon:-94.427906},
+  {name:"MEMPHIS, TN - NS - ROSSVILLE,TN", type:"IPI", lat:35.005260, lon:-89.578705},
+  {name:"KANSAS CITY, KS - BNSF LOGISTICS PARK", type:"IPI", lat:38.767739, lon:-94.984948},
+  {name:"DALLAS UPRR", type:"IPI", lat:32.628501, lon:-96.680962},
+  {name:"COLUMBUS, OH", type:"IPI", lat:39.995573, lon:-82.828357},
+  {name:"LOUISVILLE, KY", type:"IPI", lat:38.114500, lon:-85.759700},
+  {name:"OMAHA, NE / COUNCIL BLUFFS, IA", type:"IPI", lat:41.216343, lon:-95.929840},
+  {name:"SAVANNAH, GA", type:"PORT", lat:32.127400, lon:-81.163200},
+  {name:"CHARLOTTE, NC", type:"IPI", lat:35.272334, lon:-80.908698},
+  {name:"DALLAS BNSF", type:"IPI", lat:32.964963, lon:-97.327672},
+  {name:"ST.LOUIS, MO", type:"IPI", lat:38.601750, lon:-90.315587},
+  {name:"NASHVILLE, TN", type:"IPI", lat:36.101542, lon:-86.756239},
+  {name:"NEW ORLEANS, LA", type:"IPI", lat:29.915698, lon:-90.101184},
+  {name:"WILMINGTON, NC", type:"PORT", lat:34.192767, lon:-77.945727},
+  {name:"NORFOLK, VA", type:"PORT", lat:36.872573, lon:-76.358894},
+  {name:"BALTIMORE, MD", type:"PORT", lat:39.258370, lon:-76.537550},
+  {name:"OAKLAND, CA", type:"PORT", lat:37.796856, lon:-122.304260},
+  {name:"CHARLESTON, SC", type:"PORT", lat:32.840553, lon:-79.953115},
+  {name:"BOSTON, MA", type:"PORT", lat:42.339765, lon:-71.035435},
+  {name:"SALT LAKE CITY, UT", type:"IPI", lat:40.771550, lon:-111.907986},
+  {name:"CLEVELAND, OH", type:"IPI", lat:41.563840, lon:-81.575457},
+  {name:"MOBILE, AL", type:"PORT", lat:30.666587, lon:-88.041873},
+  {name:"GREER, SC", type:"IPI", lat:34.930864, lon:-82.192319},
+  {name:"JACKSONVILLE, FL", type:"PORT", lat:30.394677, lon:-81.540770},
+  {name:"MINNEAPOLIS, MN / ST. PAUL, MN", type:"IPI", lat:44.968859, lon:-93.172196},
+  {name:"TAMPA, FL", type:"PORT", lat:27.919242, lon:-82.431773},
+  {name:"MIAMI, FL", type:"PORT", lat:25.771817, lon:-80.165674},
+  {name:"PORTLAND OR", type:"PORT", lat:45.638177, lon:-122.750626},
+  {name:"PORT EVERGLADES, FL", type:"PORT", lat:26.081660, lon:-80.120584},
+  {name:"SEATTLE WA", type:"PORT", lat:47.573856, lon:-122.348359},
+  {name:"TACOMA WA", type:"PORT", lat:47.266552, lon:-122.410226},
+  {name:"PITTSBURGH, PA", type:"IPI", lat:40.312725, lon:-79.900495},
+  {name:"DENVER - BNSF DENVER / UP DENVER", type:"IPI", lat:39.790500, lon:-104.994500},
+  {name:"DENVER - BNSF HUDSON", type:"IPI", lat:40.067600, lon:-104.628800},
+  {name:"INDIANAPOLIS, IN", type:"IPI", lat:39.746623, lon:-86.164181},
+  {name:"BUFFALO, NY", type:"IPI", lat:42.797787, lon:-78.834263},
+  {name:"PHILADELPHIA, PA", type:"PORT", lat:39.900862, lon:-75.116517},
+  {name:"WORCESTER, MA", type:"IPI", lat:42.224400, lon:-71.790708},
+  {name:"EL PASO/SANTA TERESA, NM", type:"IPI", lat:31.752711, lon:-106.493000}
+];
+// Per-location RPM table (from Excel)
+const RPM_BY_LOCATION = {
+  "ATLANTA, GA - CSX & BNSF": 3.0,
+  "ATLANTA, GA - NS AUSTELL": 3.0,
+  "BALTIMORE, MD": 3.5,
+  "BOSTON, MA": 3.5,
+  "BUFFALO, NY": 5.0,
+  "CHARLESTON, SC": 3.0,
+  "CHARLOTTE, NC": 3.0,
+  "CHICAGO, IL  - UP JOLIET INTERMODAL TERMINAL GLOBAL 4 (I206)": 3.0,
+  "CHICAGO, IL -  NORFOLK SOUTHERN - LANDERS (I104)": 3.0,
+  "CHICAGO, IL - BNSF - CHICAGO - LPC (H572)": 3.0,
+  "CHICAGO, IL - CN RAIL - CHICAGO - HARVEY (I092)": 3.0,
+  "CHICAGO, IL - CP RAIL - CHICAGO, BENSENVILLE (J830)": 3.0,
+  "CHICAGO, IL - CSX (J470)": 3.0,
+  "CINCINNATI, OH": 3.0,
+  "CLEVELAND, OH": 3.0,
+  "COLUMBUS, OH": 3.0,
+  "DALLAS BNSF": 3.0,
+  "DALLAS UPRR": 3.0,
+  "DENVER - BNSF DENVER / UP DENVER": 5.0,
+  "DENVER - BNSF HUDSON": 5.0,
+  "DETROIT, MI": 3.0,
+  "EL PASO/SANTA TERESA, NM": 5.0,
+  "GREER, SC": 3.0,
+  "HOUSTON, TX - HOUSTON PORT": 3.0,
+  "INDIANAPOLIS, IN": 5.0,
+  "JACKSONVILLE, FL": 3.0,
+  "KANSAS CITY, KS - BNSF LOGISTICS PARK": 3.0,
+  "KANSAS CITY, KS - CPKC - KANSAS CITY / CSX KANSAS CITY": 3.0,
+  "KANSAS CITY, KS - NS VOLTZ / UP NEFF": 3.0,
+  "LA/LB, CA PORTS": 3.25,
+  "LOUISVILLE, KY": 3.0,
+  "MEMPHIS, TN - BNSF - MEMPHIS (SHELBY)": 3.0,
+  "MEMPHIS, TN - CN - INTERMODAL GATEWAY MEMPHIS": 3.0,
+  "MEMPHIS, TN - CSX - MEMPHIS": 3.0,
+  "MEMPHIS, TN - NS - ROSSVILLE,TN": 3.0,
+  "MEMPHIS, TN - UP - MARION, AR": 3.0,
+  "MIAMI, FL": 4.0,
+  "MINNEAPOLIS, MN / ST. PAUL, MN": 3.0,
+  "MOBILE, AL": 3.0,
+  "NASHVILLE, TN": 3.0,
+  "NEW ORLEANS, LA": 3.25,
+  "NEW YORK, NY": 4.0,
+  "NORFOLK, VA": 3.0,
+  "OAKLAND, CA": 3.5,
+  "OMAHA, NE / COUNCIL BLUFFS, IA": 3.0,
+  "PHILADELPHIA, PA": 5.0,
+  "PITTSBURGH, PA": 5.0,
+  "PORT EVERGLADES, FL": 5.0,
+  "PORTLAND OR": 3.5,
+  "SALT LAKE CITY, UT": 3.0,
+  "SAVANNAH, GA": 3.0,
+  "SEATTLE WA": 3.25,
+  "ST.LOUIS, MO": 3.0,
+  "TACOMA WA": 3.0,
+  "TAMPA, FL": 3.0,
+  "WILMINGTON, NC": 3.0,
+  "WORCESTER, MA": 5.0
+};
+// Normalization + aliasing for facility names
+function _normName(s){
+  if (!s) return "";
+  // Uppercase, trim, collapse spaces
+  let t = String(s).toUpperCase().trim();
+  t = t.replace(/\s+/g, " ");
+  // Replace dots with spaces, remove extra punctuation except comma and ampersand
+  t = t.replace(/[.]/g, " ");
+  t = t.replace(/[^A-Z0-9,&\s\-]/g, ""); // keep letters, digits, comma, ampersand, space, dash
+  t = t.replace(/\s{2,}/g, " ");
+  // Drop common prefixes like "PORT OF", rail prefixes, etc.
+  t = t.replace(/\bPORT OF\s+/g, "");
+  t = t.replace(/\bBNSF\b|\bUP\b|\bNS\b|\bCSX\b|\bCP\b|\bCN\b/g, "").replace(/\s{2,}/g," ").trim();
+  // If format like "CITY, ST - ...", chop at " - "
+  const dash = t.indexOf(" - ");
+  if (dash > -1) t = t.slice(0, dash).trim();
+  // Also remove words like TERMINAL, RAMP, RAIL, YARD at the end
+  t = t.replace(/,?\s+(TERMINAL|RAMP|RAIL|YARD|GATE|PORT|RDC)$/g, "").trim();
+  return t;
+}
+// Precompute a normalized-key map for exact match
+const _RPM_NORM_MAP = (() => {
+  const out = {};
+  for (const k in RPM_BY_LOCATION){
+    if (!Object.prototype.hasOwnProperty.call(RPM_BY_LOCATION, k)) continue;
+    const nk = _normName(k);
+    if (!(nk in out)) out[nk] = k; // first wins
+  }
+  return out;
+})();
+// Heuristic city,ST extractor
+function _extractCityState(s){
+  if (!s) return "";
+  const m = String(s).toUpperCase().match(/([A-Z\s.&]+,\s*[A-Z]{2})/);
+  return m ? m[1].replace(/\s{2,}/g," ").trim() : "";
+}
+function getRpmFor(name){
+  // Try exact as given
+  if (name && Object.prototype.hasOwnProperty.call(RPM_BY_LOCATION, name)) {
+    return RPM_BY_LOCATION[name];
+  }
+  // Normalize and try normalized map
+  const norm = _normName(name);
+  if (norm && _RPM_NORM_MAP[norm]) {
+    return RPM_BY_LOCATION[_RPM_NORM_MAP[norm]];
+  }
+  // Try extracting CITY, ST and lookup
+  const cityst = _extractCityState(name);
+  if (cityst) {
+    const n2 = _normName(cityst);
+    if (_RPM_NORM_MAP[n2]) return RPM_BY_LOCATION[_RPM_NORM_MAP[n2]];
+    if (Object.prototype.hasOwnProperty.call(RPM_BY_LOCATION, cityst)) return RPM_BY_LOCATION[cityst];
+  }
+  // Substring containment . if any key is contained in name or vice versa, take the first
+  const up = String(name || "").toUpperCase();
+  for (const k in RPM_BY_LOCATION){
+    if (!Object.prototype.hasOwnProperty.call(RPM_BY_LOCATION, k)) continue;
+    const uk = k.toUpperCase();
+    if (up.includes(uk) || uk.includes(up)) return RPM_BY_LOCATION[k];
+  }
+  // Default
+  return 3;
+}
+// Geocode . Nominatim
+async function geocodeUS(query){
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { headers: { "Accept":"application/json" } });
+  if(!res.ok) throw new Error(`Geocoding failed . HTTP ${res.status}`);
+  const data = await res.json();
+  const first = data?.[0];
+  if(!first) throw new Error("No geocoding results");
+  return { lat: parseFloat(first.lat), lon: parseFloat(first.lon), label: first.display_name || query };
+}
+
+// Route . OSRM public
+async function osrmMiles(from, to){
+  const url = `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=false`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error(`Routing failed . HTTP ${res.status}`);
+  const data = await res.json();
+  const meters = data?.routes?.[0]?.distance;
+  if(typeof meters !== "number") throw new Error("No driving distance returned");
+  return meters / 1609.344;
+}
+
+// Populate dropdown with grouping
+function populateOverride(){
+  const sel = $("overrideSelect");
+  sel.innerHTML = "";
+  const auto = document.createElement("option");
+  auto.value = "auto";
+  auto.textContent = "Auto . nearest by road";
+  sel.appendChild(auto);
+
+  const sorted = [...DESTINATIONS].sort((a,b)=>{
+    if(a.type !== b.type) return a.type.localeCompare(b.type);
+    return a.name.localeCompare(b.name);
+  });
+
+  const groups = [
+    {label:"Ocean Ports", type:"PORT"},
+    {label:"IPI Rail Depots", type:"IPI"},
+  ];
+
+  for(const g of groups){
+    const og = document.createElement("optgroup");
+    og.label = g.label;
+    sorted.filter(d=>d.type===g.type).forEach(d=>{
+      const idx = DESTINATIONS.findIndex(x=>x.name===d.name && x.type===d.type && x.lat===d.lat && x.lon===d.lon);
+      const opt = document.createElement("option");
+      opt.value = String(idx);
+      opt.textContent = d.name;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  }
+}
+
+// Render
+function locationAccessorials(name){
+  const raw = String(name || "").toUpperCase();
+  const extra = [];
+  if (raw.includes("OAKLAND, CA")) {
+    extra.push("USOAK Extended Gate Fee - $55");
+  }
+  if (raw.includes("LA/LB, CA PORTS") || raw.includes("PORT OF LOS ANGELES") || raw.includes("PORT OF LONG BEACH")) {
+    extra.push("Clean Truck Fee - $20");
+    extra.push("Pierpass - $80");
+  }
+  return extra;
+}
+
+function renderResult(dest, oneWay, roundTrip, cost){
+  $("rName").textContent = dest.name;
+  $("rType").textContent = dest.type;
+  $("rMilesOne").textContent = round(oneWay,2);
+  $("rMilesRound").textContent = round(roundTrip,2);
+  $("rCost").textContent = `$${Number(round(cost,2)).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+  $("result").hidden = false;
+  setBadge("Done", "var(--ok)");
+
+  // Update Accessorials list . base + location-specific
+  const base = [
+    "Prepull - $150",
+    "Yard Storage - $50/day",
+    "Chassis Rental - $50/day",
+    "Chassis Split - $150",
+    "2 Hours free at the Ramp then $80/Hr after",
+    "1 Hour free at warehouse then $100/Hr after",
+    "Overweight fee - $250",
+    "Tri Axle - $150/day",
+    "Reefer Fee - $200",
+  ];
+  const extras = locationAccessorials(dest.name);
+  const ul = document.querySelector("#accessorials ul");
+  if (ul){
+    ul.innerHTML = "";
+    [...base, ...extras].forEach(txt=>{
+      const li = document.createElement("li");
+      li.textContent = txt;
+      ul.appendChild(li);
+    });
+  }
+}
+// Main calculate
+async function calculate(){
+  try{
+    setBadge("Working . geocoding", "var(--orange)");
+    $("result").hidden = true;
+    log("START");
+
+    // Validate origin . robust ZIP handling
+    const zipRaw = $("zip").value || "";
+    const zipDigits = zipRaw.replace(/\\D/g,""); // strip non-digits
+    const city = ($("city").value || "").trim();
+    const state = ($("state").value || "").trim().toUpperCase();
+
+    let query = "";
+    if(zipDigits.length){ // accept 5 or 9 . use first 5
+      if(zipDigits.length < 5){
+        throw new Error("Zip appears incomplete . need at least 5 digits");
+      }
+      query = zipDigits.slice(0,5);
+      log(`INPUT . ZIP normalized="${query}" from "${zipRaw}"`);
+    }else{
+      assert(city && /^[A-Za-z .'-]+$/.test(city), "City is required when no ZIP");
+      assert(state && /^[A-Z]{2}$/.test(state), "Use 2-letter state code");
+      query = `${city}, ${state}`;
+      log(`INPUT . origin by city/state="${query}"`);
+    }
+
+    // Geocode
+    const origin = await geocodeUS(query);
+    log(`GEOCODE . ${origin.label} -> ${origin.lat}, ${origin.lon}`);
+
+    // Override path
+    const overrideVal = $("overrideSelect").value;
+    if(overrideVal !== "auto"){
+      setBadge("Routing . override", "var(--orange)");
+      const idx = Number(overrideVal);
+      const dest = DESTINATIONS[idx];
+      assert(dest, "Invalid override selection");
+      const oneWay = await osrmMiles(origin, dest);
+      const roundTrip = oneWay * 2;
+      
+      // Upper limit . no quote over 800 mi round-trip
+      if (roundTrip > 800) {
+        document.getElementById('result').hidden = false;
+        document.getElementById('rName').textContent = dest.name;
+        document.getElementById('rType').textContent = dest.type || '';
+        document.getElementById('rMilesOne').textContent = round(oneWay);
+        document.getElementById('rMilesRound').textContent = round(roundTrip);
+        document.getElementById('rCost').textContent = 'Distance is too large, please choose an alternate routing or reach out to US.KApex.FCL.Trucking@KLN.COM';
+        if (typeof setBadge === 'function') { setBadge('Capped . >800 mi', 'var(--err)'); }
+        if (typeof renderRoute === 'function') { renderRoute(dest); }
+        return;
+      }
+      const rpm = getRpmFor(dest && dest.name ? dest.name : name);
+      const cost = Math.max(350, 200 + rpm * roundTrip);
+renderResult(dest, oneWay, roundTrip, cost);
+      assert(oneWay > 0 && roundTrip > 0 && cost > 0, "Computed values are not positive");
+      log(`OVERRIDE . ${dest.name} (${dest.type}) . one-way ${round(oneWay)} mi`);
+      return;
+    }
+
+    // Auto mode . prefilter by air and route top 5
+    setBadge("Geocoded . finding candidates", "var(--orange)");
+    const withAir = DESTINATIONS.map(d=>({
+      ...d,
+      air: haversineMiles({lat:origin.lat, lon:origin.lon}, {lat:d.lat, lon:d.lon})
+    })).sort((a,b)=>a.air - b.air);
+    const shortlist = withAir.slice(0, 5);
+    log(`CANDIDATES . shortlisted ${shortlist.length} by air miles`);
+    assert(shortlist.length > 0, "No destinations available");
+
+    setBadge("Routing . computing", "var(--orange)");
+    const results = [];
+    for(const d of shortlist){
+      try{
+        const miles = await osrmMiles(origin, d);
+        results.push({ ...d, driveMiles: miles });
+      }catch(e){
+        log(`WARN . routing failed for ${d.name}`);
+      }
+    }
+    results.sort((a,b)=>a.driveMiles - b.driveMiles);
+    assert(results.length > 0, "No driving routes succeeded");
+
+    const best = results[0];
+    const oneWay = best.driveMiles;
+    const roundTrip = oneWay * 2;
+    if (roundTrip > 800) {
+  document.getElementById('result').hidden = false;
+  document.getElementById('rName').textContent = best.name;
+  document.getElementById('rType').textContent = best.type || '';
+  document.getElementById('rMilesOne').textContent = round(oneWay);
+  document.getElementById('rMilesRound').textContent = round(roundTrip);
+  document.getElementById('rCost').textContent = 'Distance is too large, please choose an alternate routing or reach out to US.KApex.FCL.Trucking@KLN.COM';
+  if (typeof setBadge === 'function') { setBadge('Capped . >800 mi', 'var(--err)'); }
+  if (typeof renderRoute === 'function') { renderRoute(best); }
+  return;
+}
+const rpm = getRpmFor(best && best.name ? best.name : '');
+const cost = Math.max(350, 250 + rpm * roundTrip);
+
+    renderResult(best, oneWay, roundTrip, cost);
+    log(`BEST . ${best.name} (${best.type}) . one-way ${round(oneWay)} mi`);
+  }catch(err){
+    setBadge("Error", "var(--err)");
+    log(`ERROR . ${err.message}`);
+    alert(`Error . ${err.message}`);
+  }
+}
+
+// Events
+$("calcBtn").addEventListener("click", calculate);
+$("resetBtn").addEventListener("click", ()=>{
+  ["zip","city","state"].forEach(id=>$(id).value="");
+  $("overrideSelect").value = "auto";
+  $("result").hidden = true;
+  setBadge("Idle");
+});
+$("copyBtn").addEventListener("click", async ()=>{
+  const lines = [
+    `Facility: ${$("rName").textContent} (${ $("rType").textContent })`,
+    `One-way miles: ${$("rMilesOne").textContent}`,
+    `Round-trip miles: ${$("rMilesRound").textContent}`,
+    `Cost: ${$("rCost").textContent}`,
+    "",
+    "Accessorial charges (if applicable):",
+    "Prepull . $150",
+    "Yard Storage . $50/day",
+    "Chassis Rental . $50/day",
+    "Chassis Split . $150",
+    "2 Hours free at the Ramp then $80/Hr after",
+    "1 Hour free at warehouse then $100/Hr after",
+    "Overweight fee $250",
+    "Tri Axle . $150/day",
+    "Reefer Fee . $200",
+    "Other additional charges may apply for other requested services"
+  ].join("\\n");
+  try{ await navigator.clipboard.writeText(lines); }catch{}
+});
+window.addEventListener("load", populateOverride);
+</script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+// Route map . non-invasive wrapper
+(function(){
+  let map, routeLayer;
+  function ensure() {
+    const el = document.getElementById("routeMap");
+    if (!map && el) {
+      map = L.map(el);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+    }
+    return map;
+  }
+  async function draw(origin, dest){
+    try{
+      if(!origin||!dest) return;
+      const el = document.getElementById("routeMap");
+      if(!el) return;
+      el.style.display = "block";
+      ensure();
+      if(routeLayer){ try{ map.removeLayer(routeLayer); }catch(e){} routeLayer=null; }
+      const url = `https://router.project-osrm.org/route/v1/driving/${origin.lon},${origin.lat};${dest.lon},${dest.lat}?overview=full&geometries=geojson`;
+      const r = await fetch(url);
+      if(!r.ok) throw new Error("Routing failed . " + r.status);
+      const j = await r.json();
+      const rt = j && j.routes && j.routes[0];
+      if(!rt || !rt.geometry) throw new Error("No route geometry");
+      routeLayer = L.geoJSON(rt.geometry, { weight: 5 }).addTo(map);
+      const coords = rt.geometry.coordinates.map(c=>[c[1],c[0]]);
+      const b = L.latLngBounds(coords);
+      map.fitBounds(b, { padding:[20,20] });
+    }catch(e){ console && console.warn && console.warn("[routeMap]", e); }
+  }
+
+  // Patch geocode to remember last origin (without editing original)
+  const _geocodeUS = window.geocodeUS;
+  window.geocodeUS = async function(q){
+    const o = await _geocodeUS(q);
+    window.__lastOrigin = o;
+    return o;
+  };
+
+  // Wrap renderResult to also draw the map
+  const _renderResult = window.renderResult;
+  window.renderResult = function(dest, oneWay, roundTrip, cost){
+    try{ _renderResult(dest, oneWay, roundTrip, cost); } finally {
+      try{ if(window.__lastOrigin) draw(window.__lastOrigin, dest); }catch(e){}
+    }
+  };
+
+  // Hide map on reset
+  const resetBtn = document.getElementById("resetBtn");
+  if(resetBtn){
+    resetBtn.addEventListener("click", ()=>{
+      const el = document.getElementById("routeMap");
+      if(el) el.style.display = "none";
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
